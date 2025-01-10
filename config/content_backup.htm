@@ -4,7 +4,7 @@
 <p><a class="style-scope ytcp-video-info" href="https://youtu.be/Od5AXnxmbrE" target="_blank">https://youtu.be/Od5AXnxmbrE</a><span> 自己倉儲進度報告</span></p>
 <p><span><a class="style-scope ytcp-video-info" href="https://youtu.be/or3bs2a3NKY" target="_blank">https://youtu.be/or3bs2a3NKY</a>  專題進度報告</span></p>
 <p>期末書面專題報告檔案 (pdf):</p>
-<p><a href="/downloads/簡報.pdf">報告檔案</a></p>
+<p><a href="/downloads/簡報2.pdf">報告檔案</a></p>
 <p>電腦輔助設計與實習課程總結心得:</p>
 <p>在這堂課學到很多程式應用 nx sovlespace coppliasim 其中nx和sovlespace在我修完這堂課後 對於繪圖程式的能力更上一層樓 </p>
 <p>期末報告自評成績:70</p>
@@ -41,6 +41,200 @@
 <p><img alt="" height="225" src="/images/oSM92KQN9w.png" width="400"/></p>
 <h2>第十六周</h2>
 <p><img alt="" height="225" src="/images/LXDSlLPJel.png" width="400"/></p>
+<h1>w15</h1>
+<p><span>基礎功能建設影片</span></p>
+<p><a href="https://www.youtube.com/watch?v=kqpgZO6r5ro&amp;t=2715s">https://www.youtube.com/watch?v=kqpgZO6r5ro&amp;t=2715s</a></p>
+<p><span>控制程式</span></p>
+<div class="line number1 index0 alt2">
+<pre class="brush:html;auto-links:false;toolbar:false" contenteditable="false"># pip install pyzmq cbor keyboard
+from coppeliasim_zmqremoteapi_client import RemoteAPIClient
+import keyboard
+ 
+# Connecting to the CoppeliaSim server
+client = RemoteAPIClient('localhost', 23000)
+ 
+print('Program started')
+sim = client.getObject('sim')
+ 
+# Get the handle for the slider (prismatic joint)
+cw= sim.getObject('/cw_joint')
+ccw= sim.getObject('/ccw_joint')
+ 
+# Starting the simulation
+sim.startSimulation()
+print('Simulation started')
+ 
+# Main control loop
+def main():
+    # Keep running until simulation is stopped
+    while True:
+        if keyboard.is_pressed('w'):  # Move slider to -0.15 position
+            print("w is pressed")
+            sim.setJointTargetPosition(cw, -0.25)
+         
+        if keyboard.is_pressed('s'):  # Reset slider to the original position
+            print("s is pressed")
+            sim.setJointTargetPosition(cw, 0.0)  # Reset to the initial position
+             
+        if keyboard.is_pressed('p'):  # Move slider to -0.15 position
+            print("p is pressed")
+            sim.setJointTargetPosition(ccw, 2.5)
+         
+        if keyboard.is_pressed('l'):  # Reset slider to the original position
+            print("l is pressed")
+            sim.setJointTargetPosition(ccw, 0.0)  # Reset to the initial position
+             
+        if keyboard.is_pressed('t'):  # Stop the simulation when 't' is pressed
+            print("t is pressed - stopping simulation")
+            sim.stopSimulation()
+            break
+ 
+# Start the main control loop
+main()</pre>
+</div>
+<p><span>得分板控制程式</span></p>
+<div class="line number1 index0 alt2">
+<pre class="brush:html;auto-links:false;toolbar:false" contenteditable="false">function sysCall_init()
+    sim = require('sim')
+ 
+    -- Get handles for all sensors (assuming the sensors are named 0, 1, 2, ..., 7)
+    sensors = {}
+    for i = 0, 7 do
+        local handle = sim.getObject('/' .. i) -- ???????? 0?1?2 ?
+        if handle ~= -1 then
+            sensors[#sensors + 1] = handle
+        else
+            sim.addLog(sim.verbosity_errors, 'Sensor /' .. i .. ' not found.')
+        end
+    end
+ 
+    -- Get the ball object
+    ball = sim.getObject('/ball')
+    if ball == -1 then
+        sim.addLog(sim.verbosity_errors, 'Ball object not found. Check its name in the scene.')
+    end
+ 
+    -- Get handles for all segments for all 7 displays (0-6)
+    segments = {}
+    for i = 0, 6 do
+        segments[i] = {
+            a = sim.getObject('/segment[' .. i .. ']/a'),
+            b = sim.getObject('/segment[' .. i .. ']/b'),
+            c = sim.getObject('/segment[' .. i .. ']/c'),
+            d = sim.getObject('/segment[' .. i .. ']/d'),
+            e = sim.getObject('/segment[' .. i .. ']/e'),
+            f = sim.getObject('/segment[' .. i .. ']/f'),
+            g = sim.getObject('/segment[' .. i .. ']/g')
+        }
+    end
+ 
+    -- Define segment patterns for numbers 0-9
+    number_patterns = {
+        [0] = {a=1, b=1, c=1, d=1, e=1, f=1, g=0},
+        [1] = {a=0, b=1, c=1, d=0, e=0, f=0, g=0},
+        [2] = {a=1, b=1, c=0, d=1, e=1, f=0, g=1},
+        [3] = {a=1, b=1, c=1, d=1, e=0, f=0, g=1},
+        [4] = {a=0, b=1, c=1, d=0, e=0, f=1, g=1},
+        [5] = {a=1, b=0, c=1, d=1, e=0, f=1, g=1},
+        [6] = {a=1, b=0, c=1, d=1, e=1, f=1, g=1},
+        [7] = {a=1, b=1, c=1, d=0, e=0, f=0, g=0},
+        [8] = {a=1, b=1, c=1, d=1, e=1, f=1, g=1},
+        [9] = {a=1, b=1, c=1, d=1, e=0, f=1, g=1}
+    }
+ 
+    -- Initialize counter and sensor state
+    counter = 0
+    last_sensor_state = {}
+ 
+    -- Define colors
+    background = {0, 0, 0}
+    led_color = {1, 0, 0}
+ 
+    -- Initialize all segments to white
+    initializeDisplays()
+ 
+    -- Initialize last sensor states
+    for i = 1, #sensors do
+        last_sensor_state[i] = false
+    end
+end
+ 
+function initializeDisplays()
+    -- Set all segments of all displays to white
+    for display_index = 0, 6 do
+        for _, segment_handle in pairs(segments[display_index]) do
+            sim.setShapeColor(segment_handle, nil, sim.colorcomponent_ambient_diffuse, background)
+        end
+    end
+end
+ 
+function displayDigit(number, display_index)
+    -- Ensure number is within 0-9 range
+    number = number % 10
+ 
+    -- Set segments according to pattern
+    local pattern = number_patterns[number]
+    for segment_name, segment_handle in pairs(segments[display_index]) do
+        if pattern[segment_name] == 1 then
+            sim.setShapeColor(segment_handle, nil, sim.colorcomponent_ambient_diffuse, led_color)
+        else
+            sim.setShapeColor(segment_handle, nil, sim.colorcomponent_ambient_diffuse, background)
+        end
+    end
+end
+ 
+function showNumber(n)
+    -- Ensure number is non-negative
+    n = math.max(0, n)
+ 
+    -- Maximum displayable number (9999999)
+    n = math.min(n, 9999999)
+ 
+    -- Display each digit
+    for i = 0, 6 do
+        local digit = math.floor(n / math.pow(10, i)) % 10
+        displayDigit(digit, i)
+    end
+end
+ 
+function sysCall_actuation()
+    -- Loop through each sensor and check its state
+    for i = 1, #sensors do
+        local sensor = sensors[i]
+ 
+        -- Ensure sensor is valid
+        if sensor ~= nil and sensor ~= -1 then
+            if ball ~= nil and ball ~= -1 then
+                local result = sim.checkProximitySensor(sensor, ball)
+                local sensor_active = (result &gt; 0)
+ 
+                -- Increment counter on rising edge (sensor just activated)
+                if sensor_active and not last_sensor_state[i] then
+                    counter = counter + 100  -- You can adjust this logic
+                    showNumber(counter)  -- Show updated count on the display
+                    sim.addLog(sim.verbosity_scriptinfos, "Sensor " .. i .. " detected the ball.")
+                end
+ 
+                -- Update last sensor state
+                last_sensor_state[i] = sensor_active
+            else
+                sim.addLog(sim.verbosity_errors, 'Ball object is invalid or not found.')
+            end
+        else
+            sim.addLog(sim.verbosity_errors, 'Invalid sensor handle at index ' .. i)
+        end
+    end
+end
+ 
+function sysCall_sensing()
+    -- Put your sensing code here if needed
+end
+ 
+function sysCall_cleanup()
+    -- Reset all segments to white on cleanup
+    initializeDisplays()
+end</pre>
+</div>
 <h1>solvespace</h1>
 <p><br/>week3:<br/>練習sovlespace繪圖 熟悉部分指令 繪製出部分草圖</p>
 <p><img alt="" height="206" src="/images/SolveSpace - C__Users_Admin_Downloads_untitled.slvs 2024_9_27 下午 04_08_36.png" width="400"/></p>
